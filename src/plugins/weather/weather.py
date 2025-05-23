@@ -298,7 +298,7 @@ class Weather(BasePlugin):
                     #"icon": "/static/icons/electricity.png",  # Update path as needed
                     "is_current": price["is_current"]
                 })
-
+        logging.info("Weather plugin: data_points to render: %s", data_points)
         return data_points
 
     def get_weather_data(self, api_key, units, lat, long):
