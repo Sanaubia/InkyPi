@@ -105,6 +105,7 @@ create_venv(){
   python3 -m venv "$VENV_PATH"
   $VENV_PATH/bin/python -m pip install -r $PIP_REQUIREMENTS_FILE > /dev/null &
   show_loader "\tInstalling python dependencies. "
+  $VENV_PATH/bin/python -m pip install nordpool
 }
 
 install_app_service() {

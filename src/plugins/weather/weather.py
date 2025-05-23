@@ -3,13 +3,12 @@ from PIL import Image
 import os
 import requests
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta, date
 import pytz
 from io import BytesIO
 import math
 from nordpool import elspot
-from pytz import timezone
-from datetime import date
+
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +83,7 @@ class Weather(BasePlugin):
         return image
     
     def get_fi_electricity_prices(self):
-        helsinki = timezone("Europe/Helsinki")
+        helsinki = timezone(timedelta(hours=3))
         prices_spot = elspot.Prices()
         price = prices_spot.fetch(
             end_date=date.today(),
@@ -285,11 +284,11 @@ class Weather(BasePlugin):
     def parse_data_points(self, *args, **kwargs):
         data_points = []
         # ...add your weather data points here...
-
         # Add electricity prices for current and future hours
         prices = self.get_fi_electricity_prices()
-        # Only show current and future hours
-        now = datetime.now(timezone("Europe/Helsinki"))
+   	# Only show current and future hours
+	  helsinki = timezone(timedelta(hours=2))
+	 now = datetime.now(helsinki)
         for price in prices:
             if price["end"] > now:
                 data_points.append({
