@@ -7,6 +7,9 @@ from datetime import datetime, timezone
 import pytz
 from io import BytesIO
 import math
+from nordpool import elspot
+from pytz import timezone
+from datetime import date
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +82,36 @@ class Weather(BasePlugin):
         if not image:
             raise RuntimeError("Failed to take screenshot, please check logs.")
         return image
+    
+    def get_fi_electricity_prices(self):
+        helsinki = timezone("Europe/Helsinki")
+        prices_spot = elspot.Prices()
+        price = prices_spot.fetch(
+            end_date=date.today(),
+            areas=["FI"],
+            resolution=60,
+        )
+        area_data = price["areas"]["FI"]["values"]
+        currency = price["currency"]
+
+        # Get current time in Helsinki
+        now = datetime.now(helsinki)
+
+        # Build a list of all prices for today, with time window and value
+        prices = []
+        for entry in area_data:
+            start = entry["start"].astimezone(helsinki)
+            end = entry["end"].astimezone(helsinki)
+            value = (entry["value"] / 10) * 1.255  # Convert to kWh
+            prices.append({
+                "start": start,
+                "end": end,
+                "label": f"{start.strftime('%H:%M')} - {end.strftime('%H:%M')}",
+                "value": value,
+                "currency": currency,
+                "is_current": start <= now < end
+            })
+        return prices
 
     def parse_weather_data(self, weather_data, aqi_data, location_data, tz, units):
         current = weather_data.get("current")
@@ -175,77 +208,97 @@ class Weather(BasePlugin):
             hourly.append(hour_forecast)
         return hourly
 
-    def parse_data_points(self, weather, air_quality, tz, units):
+    # def parse_data_points(self, weather, air_quality, tz, units):
+    #     data_points = []
+    #     sunrise_epoch = weather.get('current', {}).get("sunrise")
+
+    #     if sunrise_epoch:
+    #         sunrise_dt = datetime.fromtimestamp(sunrise_epoch, tz=timezone.utc).astimezone(tz)
+    #         data_points.append({
+    #             "label": "Sunrise",
+    #             "measurement": sunrise_dt.strftime('%I:%M').lstrip("0"),
+    #             "unit": sunrise_dt.strftime('%p'),
+    #             "icon": self.get_plugin_dir('icons/sunrise.png')
+    #         })
+    #     else:
+    #         logging.error(f"Sunrise not found in OpenWeatherMap response, this is expected for polar areas in midnight sun and polar night periods.")
+
+    #     sunset_epoch = weather.get('current', {}).get("sunset")
+    #     if sunset_epoch:
+    #         sunset_dt = datetime.fromtimestamp(sunset_epoch, tz=timezone.utc).astimezone(tz)
+    #         data_points.append({
+    #             "label": "Sunset",
+    #             "measurement": sunset_dt.strftime('%I:%M').lstrip("0"),
+    #             "unit": sunset_dt.strftime('%p'),
+    #             "icon": self.get_plugin_dir('icons/sunset.png')
+    #         })
+    #     else:
+    #         logging.error(f"Sunset not found in OpenWeatherMap response, this is expected for polar areas in midnight sun and polar night periods.")
+
+    #     data_points.append({
+    #         "label": "Wind",
+    #         "measurement": weather.get('current', {}).get("wind_speed"),
+    #         "unit": UNITS[units]["speed"],
+    #         "icon": self.get_plugin_dir('icons/wind.png')
+    #     })
+
+    #     data_points.append({
+    #         "label": "Humidity",
+    #         "measurement": weather.get('current', {}).get("humidity"),
+    #         "unit": '%',
+    #         "icon": self.get_plugin_dir('icons/humidity.png')
+    #     })
+
+    #     data_points.append({
+    #         "label": "Pressure",
+    #         "measurement": weather.get('current', {}).get("pressure"),
+    #         "unit": 'hPa',
+    #         "icon": self.get_plugin_dir('icons/pressure.png')
+    #     })
+
+    #     data_points.append({
+    #         "label": "UV Index",
+    #         "measurement": weather.get('current', {}).get("uvi"),
+    #         "unit": '',
+    #         "icon": self.get_plugin_dir('icons/uvi.png')
+    #     })
+
+    #     visibility = weather.get('current', {}).get("visibility")/1000
+    #     visibility_str = f">{visibility}" if visibility >= 10 else visibility
+    #     data_points.append({
+    #         "label": "Visibility",
+    #         "measurement": visibility_str,
+    #         "unit": 'km',
+    #         "icon": self.get_plugin_dir('icons/visibility.png')
+    #     })
+
+    #     aqi = air_quality.get('list', [])[0].get("main", {}).get("aqi")
+    #     data_points.append({
+    #         "label": "Air Quality",
+    #         "measurement": aqi,
+    #         "unit": ["Good", "Fair", "Moderate", "Poor", "Very Poor"][int(aqi)-1],
+    #         "icon": self.get_plugin_dir('icons/aqi.png')
+    #     })
+
+    #     return data_points
+
+    def parse_data_points(self, *args, **kwargs):
         data_points = []
-        sunrise_epoch = weather.get('current', {}).get("sunrise")
+        # ...add your weather data points here...
 
-        if sunrise_epoch:
-            sunrise_dt = datetime.fromtimestamp(sunrise_epoch, tz=timezone.utc).astimezone(tz)
-            data_points.append({
-                "label": "Sunrise",
-                "measurement": sunrise_dt.strftime('%I:%M').lstrip("0"),
-                "unit": sunrise_dt.strftime('%p'),
-                "icon": self.get_plugin_dir('icons/sunrise.png')
-            })
-        else:
-            logging.error(f"Sunrise not found in OpenWeatherMap response, this is expected for polar areas in midnight sun and polar night periods.")
-
-        sunset_epoch = weather.get('current', {}).get("sunset")
-        if sunset_epoch:
-            sunset_dt = datetime.fromtimestamp(sunset_epoch, tz=timezone.utc).astimezone(tz)
-            data_points.append({
-                "label": "Sunset",
-                "measurement": sunset_dt.strftime('%I:%M').lstrip("0"),
-                "unit": sunset_dt.strftime('%p'),
-                "icon": self.get_plugin_dir('icons/sunset.png')
-            })
-        else:
-            logging.error(f"Sunset not found in OpenWeatherMap response, this is expected for polar areas in midnight sun and polar night periods.")
-
-        data_points.append({
-            "label": "Wind",
-            "measurement": weather.get('current', {}).get("wind_speed"),
-            "unit": UNITS[units]["speed"],
-            "icon": self.get_plugin_dir('icons/wind.png')
-        })
-
-        data_points.append({
-            "label": "Humidity",
-            "measurement": weather.get('current', {}).get("humidity"),
-            "unit": '%',
-            "icon": self.get_plugin_dir('icons/humidity.png')
-        })
-
-        data_points.append({
-            "label": "Pressure",
-            "measurement": weather.get('current', {}).get("pressure"),
-            "unit": 'hPa',
-            "icon": self.get_plugin_dir('icons/pressure.png')
-        })
-
-        data_points.append({
-            "label": "UV Index",
-            "measurement": weather.get('current', {}).get("uvi"),
-            "unit": '',
-            "icon": self.get_plugin_dir('icons/uvi.png')
-        })
-
-        visibility = weather.get('current', {}).get("visibility")/1000
-        visibility_str = f">{visibility}" if visibility >= 10 else visibility
-        data_points.append({
-            "label": "Visibility",
-            "measurement": visibility_str,
-            "unit": 'km',
-            "icon": self.get_plugin_dir('icons/visibility.png')
-        })
-
-        aqi = air_quality.get('list', [])[0].get("main", {}).get("aqi")
-        data_points.append({
-            "label": "Air Quality",
-            "measurement": aqi,
-            "unit": ["Good", "Fair", "Moderate", "Poor", "Very Poor"][int(aqi)-1],
-            "icon": self.get_plugin_dir('icons/aqi.png')
-        })
+        # Add electricity prices for current and future hours
+        prices = self.get_fi_electricity_prices()
+        # Only show current and future hours
+        now = datetime.now(timezone("Europe/Helsinki"))
+        for price in prices:
+            if price["end"] > now:
+                data_points.append({
+                    "label": f"Electricity {price['label']}",
+                    "measurement": f"{price['value']:.2f}",
+                    "unit": price["currency"] + "/kWh",
+                    #"icon": "/static/icons/electricity.png",  # Update path as needed
+                    "is_current": price["is_current"]
+                })
 
         return data_points
 

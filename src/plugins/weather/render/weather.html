@@ -23,15 +23,8 @@
     {% if plugin_settings.displayMetrics and  plugin_settings.displayMetrics == "true" %}
     <div class="data-points">
       {% for dp in data_points %}
-        <div class="data-point column-container">
-          <div class="data-point-img-container">
-            <img class="data-point-icon" src="{{dp.icon}}" alt="{{ dp.label }}">
-          </div>
-          <div class="data-point-data">
-            <div class="data-point-label">{{ dp.label }}</div>
-            <div class="data-point-measurement">{{ dp.measurement }}{% if dp.unit %}<span class="data-point-unit">{{ dp.unit }}</span>{% endif %}
-            </div>
-          </div>
+        <div class="data-point column-container{% if dp.is_current %} current-hour{% endif %}">
+          <!-- ... -->
         </div>
       {% endfor %}
     </div>
