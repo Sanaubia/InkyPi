@@ -23,9 +23,14 @@
     {% if plugin_settings.displayMetrics and  plugin_settings.displayMetrics == "true" %}
     <div class="data-points">
       {% for dp in data_points %}
-        <div class="data-point column-container{% if dp.is_current %} current-hour{% endif %}">
-          <!-- ... -->
+         <div class="data-point column-container{% if entry.is_current %} displayed-now{% endif %}">
+        <div class="data-point-label">
+          {{ entry.time }}
         </div>
+        <div class="data-point-measurement">
+          {{ entry.price }} <span class="data-point-unit">EUR/kWh</span>
+        </div>
+      </div>
       {% endfor %}
     </div>
     {% endif %}
