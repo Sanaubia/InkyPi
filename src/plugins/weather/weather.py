@@ -286,9 +286,9 @@ class Weather(BasePlugin):
         # ...add your weather data points here...
         # Add electricity prices for current and future hours
         prices = self.get_fi_electricity_prices()
-   	# Only show current and future hours
-	  helsinki = timezone(timedelta(hours=2))
-	 now = datetime.now(helsinki)
+   	    # Only show current and future hours
+        helsinki = timezone(timedelta(hours=2))
+        now = datetime.now(helsinki)
         for price in prices:
             if price["end"] > now:
                 data_points.append({
