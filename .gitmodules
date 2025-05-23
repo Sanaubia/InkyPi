@@ -1,0 +1,3 @@
+[submodule "src/utils/nordpool"]
+	path = src/utils/nordpool
+	url = https://github.com/kipe/nordpool.git
